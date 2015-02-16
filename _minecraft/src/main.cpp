@@ -80,53 +80,58 @@ void renderObjects(void)
 	glVertex3d(0,0,0);
 	glVertex3d(0,0,10000);
 	glEnd();
+
+
+	//On change de repère
+	
+
+	//On peut faire une translation puis une rotation ou l'inverse
+	glTranslated(2, 2, 0);
+	//On fait une rotation de 45° par rapport à l'axe x
+	glRotatef(45, 0, 0, 1);
+	//On décale sur l'axe x par rapport au nouveau repère
+	//glTranslated(3, 0, 0);
 	
 	//A rajouter pour debug : rotation dans le temps
-	glRotatef(NYRenderer::_DeltaTimeCumul * 100, g_slider->Value * 10.0f, 1, cos(NYRenderer::_DeltaTimeCumul));
-
-	//On desactive le back face culling
-	glDisable(GL_CULL_FACE);
+	//glRotatef(NYRenderer::_DeltaTimeCumul * 100, g_slider->Value * 10.0f, 1, cos(NYRenderer::_DeltaTimeCumul));
 
 	//On dessine des triangles
 	glBegin(GL_TRIANGLES);
 
-	//Déclaration sens horaire mais c'est pas bien, ça marche que grâce au cull_face
+	//Déclaration sens anti-horaire
 
 	//Face 1
 	glColor3d(0, 1, 0);
 
-	
-	glVertex3d(-1, 1, 1);
-	glVertex3d(-1, 1, -1);
-	glVertex3d(1,1,-1);
 	glVertex3d(-1, 1, 1);
 	glVertex3d(1, 1, -1);
+	glVertex3d(-1, 1, -1);
+	glVertex3d(-1, 1, 1);
 	glVertex3d(1, 1, 1);
-
+	glVertex3d(1, 1, -1);
+	
 	//Face -1
 	glVertex3d(-1, -1, 1);
 	glVertex3d(-1, -1, -1);
-	glVertex3d(1,-1,-1);
+	glVertex3d(1, -1, -1);
 	glVertex3d(-1, -1, 1);
 	glVertex3d(1, -1, -1);
 	glVertex3d(1, -1, 1);
-	
+
 	//Face 2
 	glColor3d(1, 0, 0);
 
 	glVertex3d(1, -1, 1);
+	glVertex3d(1, 1, -1);
 	glVertex3d(1, 1, 1);
-	glVertex3d(1, 1, -1);
 	glVertex3d(1, -1, 1);
-	glVertex3d(1, 1, -1);
 	glVertex3d(1, -1, -1);
+	glVertex3d(1, 1, -1);
 
 	//Face -2
-
 	glVertex3d(-1, -1, 1);
 	glVertex3d(-1, 1, 1);
 	glVertex3d(-1, 1, -1);
-
 	glVertex3d(-1, -1, 1);
 	glVertex3d(-1, 1, -1);
 	glVertex3d(-1, -1, -1);
@@ -135,19 +140,17 @@ void renderObjects(void)
 	glColor3d(0, 0, 1);
 
 	glVertex3d(-1, -1, 1);
+	glVertex3d(1, 1, 1);
 	glVertex3d(-1, 1, 1);
-	glVertex3d(1, 1, 1);
-
 	glVertex3d(-1, -1, 1);
-	glVertex3d(1, 1, 1);
 	glVertex3d(1, -1, 1);
+	glVertex3d(1, 1, 1);
 
 	//Face -3
 
 	glVertex3d(-1, -1, -1);
 	glVertex3d(-1, 1, -1);
 	glVertex3d(1, 1, -1);
-
 	glVertex3d(-1, -1, -1);
 	glVertex3d(1, 1, -1);
 	glVertex3d(1, -1, -1);
