@@ -82,27 +82,47 @@ void renderObjects(void)
 	glEnd();
 
 
-	//On change de repère
-	
+	glEnable(GL_LIGHTING);
 
+	//à refaire dans une autre classe
+
+	glPushMatrix;
+	glTranslated(10, 0, 0);
+	GLfloat materialEmission[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glMaterialfv(GL_FRONT, GL_EMISSION, materialEmission);
+
+	glutSolidSphere(1, 8, 8);
+
+	glPopMatrix;
+
+	
+	//On change de repère
 	//On peut faire une translation puis une rotation ou l'inverse
-	glTranslated(2, 2, 0);
-	//On fait une rotation de 45° par rapport à l'axe x
-	glRotatef(45, 0, 0, 1);
+	//glTranslated(2, 2, 0);
+	//On fait une rotation de 45° par rapport à l'axe z
+	//glRotatef(45, 0, 0, 1);
 	//On décale sur l'axe x par rapport au nouveau repère
-	//glTranslated(3, 0, 0);
+	//glTranslated(sqrt(8.f)S, 0, 0);
 	
 	//A rajouter pour debug : rotation dans le temps
-	//glRotatef(NYRenderer::_DeltaTimeCumul * 100, g_slider->Value * 10.0f, 1, cos(NYRenderer::_DeltaTimeCumul));
+	glRotatef(NYRenderer::_DeltaTimeCumul * 100, g_slider->Value * 10.0f, 1, cos(NYRenderer::_DeltaTimeCumul));
 
 	//On dessine des triangles
+	
+
 	glBegin(GL_TRIANGLES);
 
 	//Déclaration sens anti-horaire
 
 	//Face 1
-	glColor3d(0, 1, 0);
+	//glColor3d(0, 1, 0);
 
+	GLfloat materialDiffuse[] = { 0, 0.7f, 0, 1.0f };
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, materialDiffuse);
+	GLfloat materialSpecular[] = { 0.3f, 0.3f, 0.3f, 1.0f };
+	glMaterialfv(GL_FRONT, GL_SPECULAR, materialSpecular);
+
+	glNormal3f(0, 1, 0);
 	glVertex3d(-1, 1, 1);
 	glVertex3d(1, 1, -1);
 	glVertex3d(-1, 1, -1);
@@ -111,6 +131,7 @@ void renderObjects(void)
 	glVertex3d(1, 1, -1);
 	
 	//Face -1
+	glNormal3f(0, -1, 0);
 	glVertex3d(-1, -1, 1);
 	glVertex3d(-1, -1, -1);
 	glVertex3d(1, -1, -1);
@@ -119,8 +140,14 @@ void renderObjects(void)
 	glVertex3d(1, -1, 1);
 
 	//Face 2
-	glColor3d(1, 0, 0);
+	//glColor3d(1, 0, 0);
+	materialDiffuse[0] = 0.7f;
+	materialDiffuse[1] = 0;
+	materialDiffuse[2] = 0;
+	materialDiffuse[3] = 1.0f;
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, materialDiffuse);
 
+	glNormal3f(1, 0, 0);
 	glVertex3d(1, -1, 1);
 	glVertex3d(1, 1, -1);
 	glVertex3d(1, 1, 1);
@@ -129,6 +156,7 @@ void renderObjects(void)
 	glVertex3d(1, 1, -1);
 
 	//Face -2
+	glNormal3f(-1, 0, 0);
 	glVertex3d(-1, -1, 1);
 	glVertex3d(-1, 1, 1);
 	glVertex3d(-1, 1, -1);
@@ -137,8 +165,14 @@ void renderObjects(void)
 	glVertex3d(-1, -1, -1);
 
 	//Face 3
-	glColor3d(0, 0, 1);
+	//glColor3d(0, 0, 1);
+	materialDiffuse[0] = 0;
+	materialDiffuse[1] = 0;
+	materialDiffuse[2] = 0.7f;
+	materialDiffuse[3] = 1.0f;
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, materialDiffuse);
 
+	glNormal3f(0, 0, 1);
 	glVertex3d(-1, -1, 1);
 	glVertex3d(1, 1, 1);
 	glVertex3d(-1, 1, 1);
@@ -147,6 +181,7 @@ void renderObjects(void)
 	glVertex3d(1, 1, 1);
 
 	//Face -3
+	glNormal3f(0, 0, -1);
 
 	glVertex3d(-1, -1, -1);
 	glVertex3d(-1, 1, -1);
@@ -156,6 +191,10 @@ void renderObjects(void)
 	glVertex3d(1, -1, -1);
 
 	glEnd();
+
+	//Changement de la couleur de fond
+	NYColor skyColor(0, 181.f / 255.f, 221.f / 255.f, 1);
+	g_renderer->setBackgroundColor(skyColor);
 }
 
 void setLights(void)
@@ -189,6 +228,7 @@ void specialDownFunction(int key, int p1, int p2)
 	//On change de mode de camera
 	if(key == GLUT_KEY_LEFT)
 	{
+
 	}
 
 }
@@ -227,7 +267,7 @@ void keyboardUpFunction(unsigned char key, int p1, int p2)
 
 void mouseWheelFunction(int wheel, int dir, int x, int y)
 {
-	
+	g_renderer->_Camera->move(NYVert3Df(0, 0, dir));
 }
 
 void mouseFunction(int button, int state, int x, int y)
@@ -247,16 +287,53 @@ void mouseFunction(int button, int state, int x, int y)
 	mouseTraite = g_screen_manager->mouseCallback(x,y,g_mouse_btn_gui_state,0,0);
 }
 
+
+
+
 void mouseMoveFunction(int x, int y, bool pressed)
 {
-	bool mouseTraite = false;
+	static int lastx = -1;
+	static int lasty = -1;
 
-	mouseTraite = g_screen_manager->mouseCallback(x,y,g_mouse_btn_gui_state,0,0);
-	if(pressed && mouseTraite)
+	if (!pressed)
 	{
-		//Mise a jour des variables liées aux sliders
+		lastx = x;
+		lasty = y;
 	}
+	else
+	{
+		if (lastx == -1 && lasty == -1)
+		{
+			lastx = x;
+			lasty = y;
+		}
 
+		int dx = x - lastx;
+		int dy = y - lasty;
+
+		lastx = x;
+		lasty = y;
+
+		if (GetKeyState(VK_LCONTROL) & 0x80)
+		{
+			NYVert3Df strafe = g_renderer->_Camera->_NormVec;
+			strafe.Z = 0;
+			strafe.normalize();
+			strafe *= (float)-dx / 50.0f;
+
+			NYVert3Df avance = g_renderer->_Camera->_Direction;
+			avance.Z = 0;
+			avance.normalize();
+			avance *= (float)dy / 50.0f;
+
+			g_renderer->_Camera->move(avance + strafe);
+		}
+		else
+		{
+			g_renderer->_Camera->rotate((float)-dx / 300.0f);
+			g_renderer->_Camera->rotateUp((float)-dy / 300.0f);
+		}
+	}
 }
 
 void mouseMoveActiveFunction(int x, int y)

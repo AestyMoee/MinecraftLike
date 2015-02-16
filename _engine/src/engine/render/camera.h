@@ -21,6 +21,7 @@ class NYCamera
 			_Position = NYVert3Df(0,-1,0);
 			_LookAt = NYVert3Df(0,0,0);
 			_UpRef = NYVert3Df(0,0,1);
+			_NormVec = NYVert3Df(1, 0, 0);
 			_UpVec = _UpRef;
 			updateVecs();
 		}
@@ -87,7 +88,15 @@ class NYCamera
 		  */
 		void updateVecs(void)
 		{
+			_Direction = _LookAt - _Position;
+			_Direction.normalize();
 
+			_UpVec = _UpRef;
+			_NormVec = _Direction.vecProd(_UpVec);
+			_NormVec.normalize();
+
+			_UpVec = _NormVec.vecProd(_Direction);
+			_UpVec.normalize();
 		}
 
 		/**
@@ -95,7 +104,14 @@ class NYCamera
 		  */
 		void rotate(float angle)
 		{
+			//translate par rapport à l'origine
+			//rotation autour de l'axe up de l'origine
+			//re-translate pour revenir à la position de départ			
+			_LookAt -= _Position;
+			_LookAt.rotate(_UpVec,angle);
+			_LookAt += _Position;
 
+			updateVecs();
 		}
 
 		/**
@@ -103,7 +119,12 @@ class NYCamera
 		  */
 		void rotateUp(float angle)
 		{		
+			//Comme au dessus mais au lieu de faire une rotation par rapport à Up , on fait par rapport en Left
+			_LookAt -= _Position;
+			_LookAt.rotate(_NormVec, angle);
+			_LookAt += _Position;
 
+			updateVecs();
 		}
 
 		/**
@@ -111,7 +132,10 @@ class NYCamera
 		  */
 		void rotateAround(float angle)
 		{
-
+			_Position -= _LookAt;
+			_Position.rotate(_UpRef, angle);
+			_Position += _LookAt;
+			updateVecs();
 		}
 
 		/**
@@ -119,7 +143,19 @@ class NYCamera
 		  */
 		void rotateUpAround(float angle)
 		{		
+			_Position -= _LookAt;
 
+			//On ne monte pas trop haut pour ne pas passer de l'autre coté
+			NYVert3Df previousPos = _Position;
+			_Position.rotate(_NormVec, angle);
+			NYVert3Df normPos = _Position;
+			normPos.normalize();
+			float newAngle = normPos.scalProd(_UpRef);
+			if (newAngle > 0.99 || newAngle < -0.99)
+				_Position = previousPos;
+
+			_Position += _LookAt;
+			updateVecs();
 		}
 	
 		/**
@@ -128,6 +164,8 @@ class NYCamera
 		void look(void)
 		{
 			gluLookAt(_Position.X, _Position.Y,_Position.Z,_LookAt.X,_LookAt.Y,_LookAt.Z,_UpVec.X,_UpVec.Y,_UpVec.Z);
+			//_InvertViewMatrix.createViewMatrix(_Position, _LookAt, _UpVec);
+			//_InvertViewMatrix.invert();
 		}
 };
 
