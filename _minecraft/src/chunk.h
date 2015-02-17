@@ -62,12 +62,82 @@ class NYChunk
 		//On met le chunk ddans son VBO
 		void toVbo(void)
 		{
-			
+			//On le detruit si il existe deja
+			if (_BufWorld != 0)
+				glDeleteBuffers(1, &_BufWorld);
+
+			//Genere un identifiant
+			glGenBuffers(1, &_BufWorld);
+
+			//On attache le VBO pour pouvoir le modifier
+			glBindBuffer(GL_ARRAY_BUFFER, _BufWorld);
+
+			//On reserve la quantite totale de datas (creation de la zone memoire, mais sans passer les données)
+			//Les tailles g_size* sont en octets, à vous de les calculer
+			glBufferData(GL_ARRAY_BUFFER,
+				_NbVertices * SIZE_VERTICE +
+				_NbVertices * SIZE_COLOR +
+				_NbVertices * SIZE_VERTICE,
+				NULL,
+				GL_STREAM_DRAW);
+
+			//Check error (la tester ensuite...)
+			//error = glGetError();
+
+			//On copie les vertices
+			glBufferSubData(GL_ARRAY_BUFFER,
+				0, //Offset 0, on part du debut                        
+				_NbVertices * SIZE_VERTICE, //Taille en octets des datas copiés
+				_WorldVert);  //Datas          
+
+			//Check error (la tester ensuite...)
+			//error = glGetError();
+
+			//On copie les couleurs
+			glBufferSubData(GL_ARRAY_BUFFER,
+				_NbVertices * SIZE_VERTICE, //Offset : on se place après les vertices
+				_NbVertices * SIZE_COLOR, //On copie tout le buffer couleur : on donne donc sa taille
+				_WorldCols);  //Pt sur le buffer couleur       
+
+			//Check error (la tester ensuite...)
+			//error = glGetError();
+
+			//On copie les normales (a vous de déduire les params)
+			/*glBufferSubData(GL_ARRAY_BUFFER,
+				? ? ,
+				? ? ,
+				? ? );*/
+
+			//On debind le buffer pour eviter une modif accidentelle par le reste du code
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		}
 
 		void render(void)
 		{
-			
+			glEnable(GL_COLOR_MATERIAL);
+			glEnable(GL_LIGHTING);
+
+			//On bind le buuffer
+			glBindBuffer(GL_ARRAY_BUFFER, _BufWorld);
+			NYRenderer::checkGlError("glBindBuffer");
+
+			//On active les datas que contiennent le VBO
+			glEnableClientState(GL_VERTEX_ARRAY);
+			glEnableClientState(GL_COLOR_ARRAY);
+			glEnableClientState(GL_NORMAL_ARRAY);
+
+			//On place les pointeurs sur les datas, aux bons offsets
+			glVertexPointer(3, GL_FLOAT, 0, (void*)(0));
+			glColorPointer(3, GL_FLOAT, 0, (void*)(_NbVertices*SIZE_VERTICE));
+			glNormalPointer(GL_FLOAT, 0, (void*)(_NbVertices*SIZE_VERTICE + _NbVertices*SIZE_COLOR));
+
+			//On demande le dessin
+			glDrawArrays(GL_QUADS, 0, _NbVertices);
+
+			//On cleane
+			glDisableClientState(GL_COLOR_ARRAY);
+			glDisableClientState(GL_VERTEX_ARRAY);
+			glDisableClientState(GL_NORMAL_ARRAY);
 		}
 
 		/**
