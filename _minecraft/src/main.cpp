@@ -34,6 +34,15 @@ GUIScreen * g_screen_params = NULL;
 GUIScreen * g_screen_jeu = NULL;
 GUISlider * g_slider;
 
+//Soleil
+NYVert3Df g_sun_dir;
+NYColor g_sun_color;
+float g_mn_lever = 6.0f * 60.0f;
+float g_mn_coucher = 19.0f * 60.0f;
+float g_tweak_time = 0;
+bool g_fast_time = false;
+
+
 
 //////////////////////////////////////////////////////////////////////////
 // GESTION APPLICATION
@@ -82,18 +91,143 @@ void renderObjects(void)
 	glEnd();
 
 
+	//juste apres le rendu des axes
+
+	//Active la lumière
 	glEnable(GL_LIGHTING);
+	glShadeModel(GL_SMOOTH);
 
-	//à refaire dans une autre classe
+	//Rendu du soleil
 
-	glPushMatrix;
-	glTranslated(10, 0, 0);
-	GLfloat materialEmission[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glMaterialfv(GL_FRONT, GL_EMISSION, materialEmission);
+	//On sauve la matrice
+	glPushMatrix();
 
-	glutSolidSphere(1, 8, 8);
+	//Position du soleil
+	glTranslatef(g_renderer->_Camera->_Position.X, g_renderer->_Camera->_Position.Y, g_renderer->_Camera->_Position.Z);
+	glTranslatef(g_sun_dir.X * 1000, g_sun_dir.Y * 1000, g_sun_dir.Z * 1000);
 
-	glPopMatrix;
+	//Material du soleil : de l'emissive
+	GLfloat sunEmissionMaterial[] = { 0.0, 0.0, 0.0, 1.0 };
+	sunEmissionMaterial[0] = g_sun_color.R;
+	sunEmissionMaterial[1] = g_sun_color.V;
+	sunEmissionMaterial[2] = g_sun_color.B;
+	glMaterialfv(GL_FRONT, GL_EMISSION, sunEmissionMaterial);
+
+	//On dessine un cube pour le soleil
+	glutSolidCube(50.0f);
+
+	//On reset le material emissive pour la suite
+	sunEmissionMaterial[0] = 0.0f;
+	sunEmissionMaterial[1] = 0.0f;
+	sunEmissionMaterial[2] = 0.0f;
+	glMaterialfv(GL_FRONT, GL_EMISSION, sunEmissionMaterial);
+
+	//Reset de la matrice
+	glPopMatrix();
+
+	//Rendu du Cube
+
+	//On sauve la matrice
+	glPushMatrix();
+
+	//Rotation du cube en fonction du temps
+	glRotatef(NYRenderer::_DeltaTimeCumul*50.0f, 0, 0, 1);
+	glRotatef(NYRenderer::_DeltaTimeCumul*50.0f, 0, 1, 0);
+
+	//Materiau spéculaire, le meme pour tout le cube
+	GLfloat whiteSpecularMaterial[] = { 0.3, 0.3, 0.3, 1.0 };
+	glMaterialfv(GL_FRONT, GL_SPECULAR, whiteSpecularMaterial);
+	GLfloat mShininess = 100;
+	glMaterialf(GL_FRONT, GL_SHININESS, mShininess);
+
+	//On debut les quads 
+	glBegin(GL_QUADS);
+
+	//On va grouper les faces par material
+
+	//Face1
+	GLfloat materialDiffuse[] = { 0, 0.7, 0, 1.0 };
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, materialDiffuse);
+	GLfloat materialAmbient[] = { 0, 0.2, 0, 1.0 };
+	glMaterialfv(GL_FRONT, GL_AMBIENT, materialAmbient);
+
+	glNormal3f(0, -1, 0);
+	glVertex3f(-1, -1, -1);
+	glVertex3f(1, -1, -1);
+	glVertex3f(1, -1, 1);
+	glVertex3f(-1, -1, 1);
+
+	//Face2
+	glNormal3f(0, 1, 0);
+	glVertex3f(-1, 1, -1);
+	glVertex3f(-1, 1, 1);
+	glVertex3f(1, 1, 1);
+	glVertex3f(1, 1, -1);
+
+	//Face3
+	materialDiffuse[0] = 0.7f;
+	materialDiffuse[1] = 0;
+	materialDiffuse[2] = 0;
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, materialDiffuse);
+	materialAmbient[0] = 0.2f;
+	materialAmbient[1] = 0;
+	materialAmbient[2] = 0;
+	glMaterialfv(GL_FRONT, GL_AMBIENT, materialAmbient);
+
+	glNormal3f(1, 0, 0);
+	glVertex3f(1, -1, -1);
+	glVertex3f(1, 1, -1);
+	glVertex3f(1, 1, 1);
+	glVertex3f(1, -1, 1);
+
+	//Face4
+	glNormal3f(-1, 0, 0);
+	glVertex3f(-1, -1, -1);
+	glVertex3f(-1, -1, 1);
+	glVertex3f(-1, 1, 1);
+	glVertex3f(-1, 1, -1);
+
+	//Face5
+	materialDiffuse[0] = 0;
+	materialDiffuse[1] = 0;
+	materialDiffuse[2] = 0.7f;
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, materialDiffuse);
+	materialAmbient[0] = 0;
+	materialAmbient[1] = 0;
+	materialAmbient[2] = 0.2f;
+	glMaterialfv(GL_FRONT, GL_AMBIENT, materialAmbient);
+	glNormal3f(0, 0, 1);
+	glVertex3f(-1, -1, 1);
+	glVertex3f(1, -1, 1);
+	glVertex3f(1, 1, 1);
+	glVertex3f(-1, 1, 1);
+
+	//Face6
+	glNormal3f(0, 0, -1);
+	glVertex3f(-1, -1, -1);
+	glVertex3f(-1, 1, -1);
+	glVertex3f(1, 1, -1);
+	glVertex3f(1, -1, -1);
+
+	//Fin des quads
+	glEnd();
+
+	//On recharge la matrice précédente
+	glPopMatrix();
+
+	//Sphère blanche transparente pour bien voir le shading et le reflet du soleil
+	GLfloat whiteSpecularMaterialSphere[] = { 0.3, 0.3, 0.3, 0.8 };
+	glMaterialfv(GL_FRONT, GL_SPECULAR, whiteSpecularMaterialSphere);
+	mShininess = 100;
+	glMaterialf(GL_FRONT, GL_SHININESS, mShininess);
+
+	GLfloat materialDiffuseSphere[] = { 0.7, 0.7, 0.7, 0.8 };
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, materialDiffuseSphere);
+	GLfloat materialAmbientSphere[] = { 0.2, 0.2, 0.2, 0.8 };
+	glMaterialfv(GL_FRONT, GL_AMBIENT, materialAmbientSphere);
+
+	glutSolidSphere(2, 30, 30);
+	
 
 	
 	//On change de repère
@@ -105,12 +239,12 @@ void renderObjects(void)
 	//glTranslated(sqrt(8.f)S, 0, 0);
 	
 	//A rajouter pour debug : rotation dans le temps
-	glRotatef(NYRenderer::_DeltaTimeCumul * 100, g_slider->Value * 10.0f, 1, cos(NYRenderer::_DeltaTimeCumul));
+	//glRotatef(NYRenderer::_DeltaTimeCumul * 100, g_slider->Value * 10.0f, 1, cos(NYRenderer::_DeltaTimeCumul));
 
 	//On dessine des triangles
 	
 
-	glBegin(GL_TRIANGLES);
+	/*glBegin(GL_TRIANGLES);
 
 	//Déclaration sens anti-horaire
 
@@ -190,11 +324,7 @@ void renderObjects(void)
 	glVertex3d(1, 1, -1);
 	glVertex3d(1, -1, -1);
 
-	glEnd();
-
-	//Changement de la couleur de fond
-	NYColor skyColor(0, 181.f / 255.f, 221.f / 255.f, 1);
-	g_renderer->setBackgroundColor(skyColor);
+	glEnd();*/
 }
 
 void setLights(void)
@@ -218,6 +348,97 @@ void resizeFunction(int width, int height)
 	glViewport(0, 0, width, height);
 	g_renderer->resize(width,height);
 }
+
+bool getSunDirection(NYVert3Df & sun, float mnLever, float mnCoucher)
+{
+	bool nuit = false;
+
+	SYSTEMTIME t;
+	GetLocalTime(&t);
+
+	//On borne le tweak time à une journée (cyclique)
+	while (g_tweak_time > 24 * 60)
+		g_tweak_time -= 24 * 60;
+
+	//Temps écoulé depuis le début de la journée
+	float fTime = (float)(t.wHour * 60 + t.wMinute);
+	fTime += g_tweak_time;
+	while (fTime > 24 * 60)
+		fTime -= 24 * 60;
+
+	//Si c'est la nuit
+	if (fTime < mnLever || fTime > mnCoucher)
+	{
+		nuit = true;
+		if (fTime < mnLever)
+			fTime += 24 * 60;
+		fTime -= mnCoucher;
+		fTime /= (mnLever + 24 * 60 - mnCoucher);
+		fTime *= M_PI;
+	}
+	else
+	{
+		//c'est le jour
+		nuit = false;
+		fTime -= mnLever;
+		fTime /= (mnCoucher - mnLever);
+		fTime *= M_PI;
+	}
+
+	//Position en fonction de la progression dans la journée
+	sun.X = cos(fTime);
+	sun.Y = 0.2f;
+	sun.Z = sin(fTime);
+	sun.normalize();
+
+	return nuit;
+}
+
+void setLightsBasedOnDayTime(void)
+{
+	//On active la light 0
+	glEnable(GL_LIGHT0);
+
+	//On recup la direciton du soleil
+	bool nuit = getSunDirection(g_sun_dir, g_mn_lever, g_mn_coucher);
+
+	//On définit une lumière directionelle (un soleil)
+	float position[4] = { g_sun_dir.X, g_sun_dir.Y, g_sun_dir.Z, 0 }; ///w = 0 donc c'est une position a l'infini
+	glLightfv(GL_LIGHT0, GL_POSITION, position);
+
+	//Pendant la journée
+	if (!nuit)
+	{
+		//On definit la couleur
+		NYColor sunColor(1, 1, 0.8, 1);
+		NYColor skyColor(0, 181.f / 255.f, 221.f / 255.f, 1);
+		NYColor downColor(0.9, 0.5, 0.1, 1);
+		sunColor = sunColor.interpolate(downColor, (abs(g_sun_dir.X)));
+		skyColor = skyColor.interpolate(downColor, (abs(g_sun_dir.X)));
+
+		g_renderer->setBackgroundColor(skyColor);
+
+		float color[4] = { sunColor.R, sunColor.V, sunColor.B, 1 };
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
+		float color2[4] = { sunColor.R, sunColor.V, sunColor.B, 1 };
+		glLightfv(GL_LIGHT0, GL_AMBIENT, color2);
+		g_sun_color = sunColor;
+	}
+	else
+	{
+		//La nuit : lune blanche et ciel noir
+		NYColor sunColor(1, 1, 1, 1);
+		NYColor skyColor(0, 0, 0, 1);
+		g_renderer->setBackgroundColor(skyColor);
+
+		float color[4] = { sunColor.R / 3.f, sunColor.V / 3.f, sunColor.B / 3.f, 1 };
+		glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
+		float color2[4] = { sunColor.R / 7.f, sunColor.V / 7.f, sunColor.B / 7.f, 1 };
+		glLightfv(GL_LIGHT0, GL_AMBIENT, color2);
+		g_sun_color = sunColor;
+	}
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // GESTION CLAVIER SOURIS
@@ -439,7 +660,7 @@ int main(int argc, char* argv[])
 	g_renderer = NYRenderer::getInstance();
 	g_renderer->setRenderObjectFun(renderObjects);
 	g_renderer->setRender2DFun(render2d);
-	g_renderer->setLightsFun(setLights);
+	g_renderer->setLightsFun(setLightsBasedOnDayTime);
 	g_renderer->setBackgroundColor(NYColor());
 	g_renderer->initialise();
 
