@@ -107,6 +107,37 @@ public :
 	void load_pile(int x, int y, int height, bool onlyIfZero = true)
 	{
 
+		if (height < 1)
+			height = 1;
+		if (height >= MAT_HEIGHT_CUBES)
+			height = MAT_HEIGHT_CUBES - 1;
+
+		if (_MatriceHeights[x][y] != 0 && onlyIfZero)
+			return;
+
+		for (int z = 0; z<height; z++)
+		{
+			getCube(x, y, z)->_Draw = true;
+			if (z>0)
+				getCube(x, y, z)->_Type = CUBE_TERRE;
+			else
+				getCube(x, y, z)->_Type = CUBE_EAU;
+		}
+
+		if (height - 1>0)
+		{
+			getCube(x, y, height - 1)->_Draw = true;
+			getCube(x, y, height - 1)->_Type = CUBE_HERBE;
+		}
+
+		for (int z = height; z<MAT_HEIGHT_CUBES; z++)
+		{
+			getCube(x, y, z)->_Draw = true;
+			getCube(x, y, z)->_Type = CUBE_AIR;
+		}
+
+		_MatriceHeights[x][y] = height;
+
 	}
 
 	//Creation du monde entier, en utilisant le mouvement brownien fractionnaire
@@ -115,7 +146,83 @@ public :
 		int x3, int y3,
 		int x4, int y4, int prof, int profMax = -1)
 	{
-		
+		if ((x3 - x1) <= 1 && (y3 - y1) <= 1)
+			return;
+
+		int largeurRandom = (int)(MAT_HEIGHT_CUBES / (prof*_FacteurGeneration));
+		if (largeurRandom == 0)
+			largeurRandom = 1;
+
+		if (profMax >= 0 && prof >= profMax)
+		{
+			Log::log(Log::ENGINE_INFO, ("End of generation at prof " + toString(prof)).c_str());
+			return;
+		}
+
+		//On se met au milieu des deux coins du haut
+		int xa = (x1 + x2) / 2;
+		int ya = (y1 + y2) / 2;
+		int heighta = (_MatriceHeights[x1][y1] + _MatriceHeights[x2][y2]) / 2;
+		if ((x2 - x1)>1)
+		{
+			heighta += (rand() % largeurRandom) - (largeurRandom / 2);
+			load_pile(xa, ya, heighta);
+		}
+		else
+			heighta = _MatriceHeights[xa][ya];
+
+		//Au milieu des deux coins de droite
+		int xb = (x2 + x3) / 2;
+		int yb = (y2 + y3) / 2;
+		int heightb = (_MatriceHeights[x2][y2] + _MatriceHeights[x3][y3]) / 2;
+		if ((y3 - y2)>1)
+		{
+			heightb += (rand() % largeurRandom) - (largeurRandom / 2);
+			load_pile(xb, yb, heightb);
+		}
+		else
+			heightb = _MatriceHeights[xb][yb];
+
+		//Au milieu des deux coins du bas
+		int xc = (x3 + x4) / 2;
+		int yc = (y3 + y4) / 2;
+		int heightc = (_MatriceHeights[x3][y3] + _MatriceHeights[x4][y4]) / 2;
+		heightc += (rand() % largeurRandom) - (largeurRandom / 2);
+		if ((x3 - x4)>1)
+		{
+			load_pile(xc, yc, heightc);
+		}
+		else
+			heightc = _MatriceHeights[xc][yc];
+
+		//Au milieu des deux coins de gauche
+		int xd = (x4 + x1) / 2;
+		int yd = (y4 + y1) / 2;
+		int heightd = (_MatriceHeights[x4][y4] + _MatriceHeights[x1][y1]) / 2;
+		heightd += (rand() % largeurRandom) - (largeurRandom / 2);
+		if ((y3 - y1)>1)
+		{
+			load_pile(xd, yd, heightd);
+		}
+		else
+			heightd = _MatriceHeights[xd][yd];
+
+		//Au milieu milieu
+		int xe = xa;
+		int ye = yb;
+		if ((x3 - x1)>1 && (y3 - y1)>1)
+		{
+			int heighte = (heighta + heightb + heightc + heightd) / 4;
+			heighte += (rand() % largeurRandom) - (largeurRandom / 2);
+			load_pile(xe, ye, heighte);
+		}
+
+		//On genere les 4 nouveaux quads
+		generate_piles(x1, y1, xa, ya, xe, ye, xd, yd, prof + 1, profMax);
+		generate_piles(xa, ya, x2, y2, xb, yb, xe, ye, prof + 1, profMax);
+		generate_piles(xe, ye, xb, yb, x3, y3, xc, yc, prof + 1, profMax);
+		generate_piles(xd, yd, xe, ye, xc, yc, x4, y4, prof + 1, profMax);
+
 	}
 
 
@@ -200,8 +307,47 @@ public :
 
 	void render_world_old_school(void)
 	{
-		
-	}	
+		//Flemme des materials
+		glEnable(GL_COLOR_MATERIAL);
+
+		//Pour tous les cubes de notre matrice
+		for (int x = 0; x<MAT_SIZE_CUBES; x++)
+		{
+			for (int y = 0; y<MAT_SIZE_CUBES; y++)
+			{
+				for (int z = 0; z<MAT_HEIGHT_CUBES; z++)
+				{
+					//On recup le cube (se charge d'aller chercher dans le bon chunk)
+					NYCube * cube = getCube(x, y, z);
+
+					//On le dessine en fonction de son type
+					if (cube->_Draw && cube->_Type != CUBE_AIR)
+					{
+						switch (cube->_Type)
+						{
+						case CUBE_TERRE:
+							glColor3f(101.0f / 255.0f, 74.0f / 255.0f, 0.0f / 255.0f);
+							break;
+						case CUBE_HERBE:
+							glColor3f(1.0f / 255.0f, 112.0f / 255.0f, 12.0f / 255.0f);
+							break;
+						case CUBE_EAU:
+							glColor3f(0.0f / 255.0f, 48.0f / 255.0f, 255.0f / 255.0f);
+							break;
+						}
+
+						//On se deplace pour chaque cube... bcp de push et pop
+						glPushMatrix();
+						glTranslated(x*NYCube::CUBE_SIZE, y*NYCube::CUBE_SIZE, z*NYCube::CUBE_SIZE);
+						glutSolidCube(NYCube::CUBE_SIZE);
+						glPopMatrix();
+					}
+				}
+				
+			}
+		}
+		glDisable(GL_COLOR_MATERIAL);
+	}
 };
 
 

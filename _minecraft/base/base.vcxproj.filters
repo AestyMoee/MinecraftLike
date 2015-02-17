@@ -8,6 +8,7 @@
     <ClCompile Include="..\..\_engine\src\engine\log\log.cpp">
       <Filter>engine\log</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\chunk.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="engine">
@@ -36,5 +37,8 @@
     <ClInclude Include="..\..\_engine\src\engine\render\camera.h">
       <Filter>engine\render</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\chunk.h" />
+    <ClInclude Include="..\src\cube.h" />
+    <ClInclude Include="..\src\world.h" />
   </ItemGroup>
 </Project>

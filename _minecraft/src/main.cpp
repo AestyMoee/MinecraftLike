@@ -15,7 +15,10 @@
 #include "engine/gui/screen.h"
 #include "engine/gui/screen_manager.h"
 
+//Pour avoir le monde
+#include "world.h"
 
+NYWorld * g_world;
 NYRenderer * g_renderer = NULL;
 NYTimer * g_timer = NULL;
 int g_nb_frames = 0;
@@ -125,108 +128,9 @@ void renderObjects(void)
 	//Reset de la matrice
 	glPopMatrix();
 
-	//Rendu du Cube
-
-	//On sauve la matrice
 	glPushMatrix();
-
-	//Rotation du cube en fonction du temps
-	glRotatef(NYRenderer::_DeltaTimeCumul*50.0f, 0, 0, 1);
-	glRotatef(NYRenderer::_DeltaTimeCumul*50.0f, 0, 1, 0);
-
-	//Materiau spéculaire, le meme pour tout le cube
-	GLfloat whiteSpecularMaterial[] = { 0.3, 0.3, 0.3, 1.0 };
-	glMaterialfv(GL_FRONT, GL_SPECULAR, whiteSpecularMaterial);
-	GLfloat mShininess = 100;
-	glMaterialf(GL_FRONT, GL_SHININESS, mShininess);
-
-	//On debut les quads 
-	glBegin(GL_QUADS);
-
-	//On va grouper les faces par material
-
-	//Face1
-	GLfloat materialDiffuse[] = { 0, 0.7, 0, 1.0 };
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, materialDiffuse);
-	GLfloat materialAmbient[] = { 0, 0.2, 0, 1.0 };
-	glMaterialfv(GL_FRONT, GL_AMBIENT, materialAmbient);
-
-	glNormal3f(0, -1, 0);
-	glVertex3f(-1, -1, -1);
-	glVertex3f(1, -1, -1);
-	glVertex3f(1, -1, 1);
-	glVertex3f(-1, -1, 1);
-
-	//Face2
-	glNormal3f(0, 1, 0);
-	glVertex3f(-1, 1, -1);
-	glVertex3f(-1, 1, 1);
-	glVertex3f(1, 1, 1);
-	glVertex3f(1, 1, -1);
-
-	//Face3
-	materialDiffuse[0] = 0.7f;
-	materialDiffuse[1] = 0;
-	materialDiffuse[2] = 0;
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, materialDiffuse);
-	materialAmbient[0] = 0.2f;
-	materialAmbient[1] = 0;
-	materialAmbient[2] = 0;
-	glMaterialfv(GL_FRONT, GL_AMBIENT, materialAmbient);
-
-	glNormal3f(1, 0, 0);
-	glVertex3f(1, -1, -1);
-	glVertex3f(1, 1, -1);
-	glVertex3f(1, 1, 1);
-	glVertex3f(1, -1, 1);
-
-	//Face4
-	glNormal3f(-1, 0, 0);
-	glVertex3f(-1, -1, -1);
-	glVertex3f(-1, -1, 1);
-	glVertex3f(-1, 1, 1);
-	glVertex3f(-1, 1, -1);
-
-	//Face5
-	materialDiffuse[0] = 0;
-	materialDiffuse[1] = 0;
-	materialDiffuse[2] = 0.7f;
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, materialDiffuse);
-	materialAmbient[0] = 0;
-	materialAmbient[1] = 0;
-	materialAmbient[2] = 0.2f;
-	glMaterialfv(GL_FRONT, GL_AMBIENT, materialAmbient);
-	glNormal3f(0, 0, 1);
-	glVertex3f(-1, -1, 1);
-	glVertex3f(1, -1, 1);
-	glVertex3f(1, 1, 1);
-	glVertex3f(-1, 1, 1);
-
-	//Face6
-	glNormal3f(0, 0, -1);
-	glVertex3f(-1, -1, -1);
-	glVertex3f(-1, 1, -1);
-	glVertex3f(1, 1, -1);
-	glVertex3f(1, -1, -1);
-
-	//Fin des quads
-	glEnd();
-
-	//On recharge la matrice précédente
+	g_world->render_world_old_school();
 	glPopMatrix();
-
-	//Sphère blanche transparente pour bien voir le shading et le reflet du soleil
-	GLfloat whiteSpecularMaterialSphere[] = { 0.3, 0.3, 0.3, 0.8 };
-	glMaterialfv(GL_FRONT, GL_SPECULAR, whiteSpecularMaterialSphere);
-	mShininess = 100;
-	glMaterialf(GL_FRONT, GL_SHININESS, mShininess);
-
-	GLfloat materialDiffuseSphere[] = { 0.7, 0.7, 0.7, 0.8 };
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, materialDiffuseSphere);
-	GLfloat materialAmbientSphere[] = { 0.2, 0.2, 0.2, 0.8 };
-	glMaterialfv(GL_FRONT, GL_AMBIENT, materialAmbientSphere);
-
-	glutSolidSphere(2, 30, 30);
 	
 
 	
@@ -727,7 +631,7 @@ int main(int argc, char* argv[])
 	g_screen_manager->setActiveScreen(g_screen_jeu);
 	
 	//Init Camera
-	g_renderer->_Camera->setPosition(NYVert3Df(10,10,10));
+	g_renderer->_Camera->setPosition(NYVert3Df(500,500,500));
 	g_renderer->_Camera->setLookAt(NYVert3Df(0,0,0));
 	
 
@@ -743,8 +647,14 @@ int main(int argc, char* argv[])
 	//On start
 	g_timer->start();
 
-	glutMainLoop(); 
+	
 
+	g_world = new NYWorld();
+	g_world->_FacteurGeneration = 5;
+	g_world->init_world();
+
+	glutMainLoop(); 
+	
 	return 0;
 }
 
