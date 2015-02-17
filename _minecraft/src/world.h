@@ -263,6 +263,8 @@ public :
 			for(int y=0;y<MAT_SIZE;y++)
 				for(int z=0;z<MAT_HEIGHT;z++)
 					_Chunks[x][y][z]->disableHiddenCubes();
+
+		add_world_to_vbo();
 	}
 
 	NYCube * pick(NYVert3Df  pos, NYVert3Df  dir, NYPoint3D * point)

@@ -129,7 +129,7 @@ void renderObjects(void)
 	glPopMatrix();
 
 	glPushMatrix();
-	g_world->render_world_old_school();
+	g_world->render_world_vbo();
 	glPopMatrix();
 	
 
