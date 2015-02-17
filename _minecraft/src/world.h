@@ -28,6 +28,8 @@ class NYWorld
 public :
 	NYChunk * _Chunks[MAT_SIZE][MAT_SIZE][MAT_HEIGHT];
 	int _MatriceHeights[MAT_SIZE_CUBES][MAT_SIZE_CUBES];
+
+	int _MatriceHeightsTmp[MAT_SIZE][MAT_SIZE];
 	float _FacteurGeneration;
 
 	NYWorld()
@@ -228,7 +230,37 @@ public :
 
 	void lisse(void)
 	{
+		int sizeWidow = 4;
+		memset(_MatriceHeightsTmp, 0x00, sizeof(int)*MAT_SIZE_CUBES*MAT_SIZE_CUBES);
+		for (int x = 0; x<MAT_SIZE_CUBES; x++)
+		{
+			for (int y = 0; y<MAT_SIZE_CUBES; y++)
+			{
+				//on moyenne sur une distance
+				int nb = 0;
+				for (int i = (x - sizeWidow < 0 ? 0 : x - sizeWidow);
+					i < (x + sizeWidow >= MAT_SIZE_CUBES ? MAT_SIZE_CUBES - 1 : x + sizeWidow); i++)
+				{
+					for (int j = (y - sizeWidow < 0 ? 0 : y - sizeWidow);
+						j <(y + sizeWidow >= MAT_SIZE_CUBES ? MAT_SIZE_CUBES - 1 : y + sizeWidow); j++)
+					{
+						_MatriceHeightsTmp[x][y] += _MatriceHeights[i][j];
+						nb++;
+					}
+				}
+				if (nb)
+					_MatriceHeightsTmp[x][y] /= nb;
+			}
+		}
 
+		//On reset les piles
+		for (int x = 0; x<MAT_SIZE_CUBES; x++)
+		{
+			for (int y = 0; y<MAT_SIZE_CUBES; y++)
+			{
+				load_pile(x, y, _MatriceHeightsTmp[x][y], false);
+			}
+		}
 	}
 
 	
