@@ -40,5 +40,6 @@
     <ClInclude Include="..\src\chunk.h" />
     <ClInclude Include="..\src\cube.h" />
     <ClInclude Include="..\src\world.h" />
+    <ClInclude Include="..\src\avatar.h" />
   </ItemGroup>
 </Project>

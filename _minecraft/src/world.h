@@ -17,7 +17,7 @@ typedef uint8 NYCollision;
 #define NY_COLLIDE_BACK   0x20
 #define NY_COLLIDE_IN     0x40
 
-#define MAT_SIZE 2 //en nombre de chunks
+#define MAT_SIZE 10 //en nombre de chunks
 #define MAT_HEIGHT 2 //en nombre de chunks
 #define MAT_SIZE_CUBES (MAT_SIZE * NYChunk::CHUNK_SIZE)
 #define MAT_HEIGHT_CUBES (MAT_HEIGHT * NYChunk::CHUNK_SIZE)
@@ -29,7 +29,7 @@ public :
 	NYChunk * _Chunks[MAT_SIZE][MAT_SIZE][MAT_HEIGHT];
 	int _MatriceHeights[MAT_SIZE_CUBES][MAT_SIZE_CUBES];
 
-	int _MatriceHeightsTmp[MAT_SIZE][MAT_SIZE];
+	int _MatriceHeightsTmp[MAT_SIZE_CUBES][MAT_SIZE_CUBES];
 	float _FacteurGeneration;
 
 	NYWorld()
@@ -218,6 +218,7 @@ public :
 			heighte += (rand() % largeurRandom) - (largeurRandom / 2);
 			load_pile(xe, ye, heighte);
 		}
+		
 
 		//On genere les 4 nouveaux quads
 		generate_piles(x1, y1, xa, ya, xe, ye, xd, yd, prof + 1, profMax);
@@ -291,12 +292,15 @@ public :
 			MAT_SIZE_CUBES-1,MAT_SIZE_CUBES-1,
 			0,MAT_SIZE_CUBES-1,1,profmax);	
 
+		lisse();
+
 		for(int x=0;x<MAT_SIZE;x++)
 			for(int y=0;y<MAT_SIZE;y++)
 				for(int z=0;z<MAT_HEIGHT;z++)
 					_Chunks[x][y][z]->disableHiddenCubes();
 
 		add_world_to_vbo();
+
 	}
 
 	NYCube * pick(NYVert3Df  pos, NYVert3Df  dir, NYPoint3D * point)
@@ -307,7 +311,166 @@ public :
     //Boites de collisions plus petites que deux cubes
 	NYCollision collide_with_world(NYVert3Df pos, float width, float height, NYCollision & collisionPrincipale)
 	{
-		NYCollision collision = 0;
+		NYCollision collision = 0x00;
+
+		int x = (int)(pos.X / NYCube::CUBE_SIZE);
+		int y = (int)(pos.Y / NYCube::CUBE_SIZE);
+		int z = (int)(pos.Z / NYCube::CUBE_SIZE);
+
+		int xNext = (int)((pos.X + width / 2.0f) / NYCube::CUBE_SIZE);
+		int yNext = (int)((pos.Y + width / 2.0f) / NYCube::CUBE_SIZE);
+		int zNext = (int)((pos.Z + height / 2.0f) / NYCube::CUBE_SIZE);
+
+		int xPrev = (int)((pos.X - width / 2.0f) / NYCube::CUBE_SIZE);
+		int yPrev = (int)((pos.Y - width / 2.0f) / NYCube::CUBE_SIZE);
+		int zPrev = (int)((pos.Z - height / 2.0f) / NYCube::CUBE_SIZE);
+
+		//De combien je dépasse dans les autres blocs
+		float xDepNext = 0;
+		if (xNext != x)
+			xDepNext = abs((xNext * NYCube::CUBE_SIZE) - (pos.X + width / 2.0f));
+		float xDepPrev = 0;
+		if (xPrev != x)
+			xDepPrev = abs((xPrev * NYCube::CUBE_SIZE) - (pos.X + width / 2.0f));
+
+
+		float yDepNext = 0;
+		if (yNext != y)
+			yDepNext = abs((yNext * NYCube::CUBE_SIZE) - (pos.Y + width / 2.0f));
+		float yDepPrev = 0;
+		if (yPrev != y)
+			yDepPrev = abs((yPrev * NYCube::CUBE_SIZE) - (pos.Y + width / 2.0f));
+
+
+		float zDepNext = 0;
+		if (zNext != z)
+			zDepNext = abs((zNext * NYCube::CUBE_SIZE) - (pos.Z + height / 2.0f));
+		float zDepPrev = 0;
+		if (zPrev != z)
+			zDepPrev = abs((zPrev * NYCube::CUBE_SIZE) - (pos.Z + height / 2.0f));
+
+		if (x < 0)
+			x = 0;
+		if (y < 0)
+			y = 0;
+		if (z < 0)
+			z = 0;
+
+		if (xPrev < 0)
+			xPrev = 0;
+		if (yPrev < 0)
+			yPrev = 0;
+		if (zPrev < 0)
+			zPrev = 0;
+
+		if (xNext < 0)
+			xNext = 0;
+		if (yNext < 0)
+			yNext = 0;
+		if (zNext < 0)
+			zNext = 0;
+
+		if (x >= MAT_SIZE_CUBES)
+			x = MAT_SIZE_CUBES - 1;
+		if (y >= MAT_SIZE_CUBES)
+			y = MAT_SIZE_CUBES - 1;
+		if (z >= MAT_HEIGHT_CUBES)
+			z = MAT_HEIGHT_CUBES - 1;
+
+		if (xPrev >= MAT_SIZE_CUBES)
+			xPrev = MAT_SIZE_CUBES - 1;
+		if (yPrev >= MAT_SIZE_CUBES)
+			yPrev = MAT_SIZE_CUBES - 1;
+		if (zPrev >= MAT_HEIGHT_CUBES)
+			zPrev = MAT_HEIGHT_CUBES - 1;
+
+		if (xNext >= MAT_SIZE_CUBES)
+			xNext = MAT_SIZE_CUBES - 1;
+		if (yNext >= MAT_SIZE_CUBES)
+			yNext = MAT_SIZE_CUBES - 1;
+		if (zNext >= MAT_HEIGHT_CUBES)
+			zNext = MAT_HEIGHT_CUBES - 1;
+
+		//Est on dans un cube plein ?
+		if (getCube(x, y, z)->_Draw)
+			collision |= NY_COLLIDE_IN;
+
+		//Collisions droite et gauche
+		//On checke ou se trouvent les sommets de la box
+		//On checke les coins top et bottom en meme temps
+
+		//Sommets arrières gauches
+		if (getCube(xPrev, yPrev, zPrev)->isSolid() ||
+			getCube(xPrev, yPrev, zNext)->isSolid())
+		{
+			collision |= NY_COLLIDE_LEFT;
+			collision |= NY_COLLIDE_BACK;
+			if (xDepPrev > yDepPrev)
+				collisionPrincipale |= NY_COLLIDE_LEFT;
+			else
+				collisionPrincipale |= NY_COLLIDE_BACK;
+		}
+
+		//Sommets avants gauches
+		if (getCube(xPrev, yNext, zPrev)->isSolid() ||
+			getCube(xPrev, yNext, zNext)->isSolid())
+		{
+			collision |= NY_COLLIDE_LEFT;
+			collision |= NY_COLLIDE_FRONT;
+			if (xDepPrev > yDepNext)
+				collisionPrincipale |= NY_COLLIDE_LEFT;
+			else
+				collisionPrincipale |= NY_COLLIDE_FRONT;
+		}
+
+		//Sommets arrière droits
+		if (getCube(xNext, yPrev, zPrev)->isSolid() ||
+			getCube(xNext, yPrev, zNext)->isSolid())
+		{
+			collision |= NY_COLLIDE_RIGHT;
+			collision |= NY_COLLIDE_BACK;
+			if (xDepNext > yDepPrev)
+				collisionPrincipale |= NY_COLLIDE_RIGHT;
+			else
+				collisionPrincipale |= NY_COLLIDE_BACK;
+		}
+
+		//Sommets avant droits
+		if (getCube(xNext, yNext, zPrev)->isSolid() ||
+			getCube(xNext, yNext, zNext)->isSolid())
+		{
+			collision |= NY_COLLIDE_RIGHT;
+			collision |= NY_COLLIDE_FRONT;
+			if (xDepNext > yDepNext)
+				collisionPrincipale |= NY_COLLIDE_RIGHT;
+			else
+				collisionPrincipale |= NY_COLLIDE_FRONT;
+		}
+
+		//Pour le bottom on checke tout, meme le milieu 
+		if (getCube(xPrev, y, zPrev)->isSolid() ||
+			getCube(xPrev, yPrev, zPrev)->isSolid() ||
+			getCube(xPrev, yNext, zPrev)->isSolid() ||
+			getCube(xNext, y, zPrev)->isSolid() ||
+			getCube(xNext, yPrev, zPrev)->isSolid() ||
+			getCube(xNext, yNext, zPrev)->isSolid() ||
+			getCube(x, y, zPrev)->isSolid() ||
+			getCube(x, yPrev, zPrev)->isSolid() ||
+			getCube(x, yNext, zPrev)->isSolid())
+			collision |= NY_COLLIDE_BOTTOM;
+
+		//Pour le up on checke tout, meme le milieu 
+		if (getCube(xPrev, y, zNext)->isSolid() ||
+			getCube(xPrev, yPrev, zNext)->isSolid() ||
+			getCube(xPrev, yNext, zNext)->isSolid() ||
+			getCube(xNext, y, zNext)->isSolid() ||
+			getCube(xNext, yPrev, zNext)->isSolid() ||
+			getCube(xNext, yNext, zNext)->isSolid() ||
+			getCube(x, y, zNext)->isSolid() ||
+			getCube(x, yPrev, zNext)->isSolid() ||
+			getCube(x, yNext, zNext)->isSolid())
+			collision |= NY_COLLIDE_UP;
+
 		return collision;
 	}
 

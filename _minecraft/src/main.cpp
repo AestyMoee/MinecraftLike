@@ -17,8 +17,11 @@
 
 //Pour avoir le monde
 #include "world.h"
+//Pour avoir un avatar
+#include "avatar.h"
 
 NYWorld * g_world;
+NYAvatar * g_avatar;
 NYRenderer * g_renderer = NULL;
 NYTimer * g_timer = NULL;
 int g_nb_frames = 0;
@@ -32,6 +35,8 @@ GUIScreenManager * g_screen_manager = NULL;
 GUIBouton * BtnParams = NULL;
 GUIBouton * BtnClose = NULL;
 GUILabel * LabelFps = NULL;
+GUILabel * LabelPos = NULL;
+GUILabel * LabelLoAt = NULL;
 GUILabel * LabelCam = NULL;
 GUIScreen * g_screen_params = NULL;
 GUIScreen * g_screen_jeu = NULL;
@@ -68,6 +73,12 @@ void update(void)
 
 	//Rendu
 	g_renderer->render(elapsed);
+
+	g_avatar->update(elapsed);
+	g_renderer->_Camera->setPosition(g_avatar->Position);
+
+	LabelPos->Text = "Position : " + g_renderer->_Camera->_Position.toStr();
+	LabelLoAt->Text = "LookAt : " + g_renderer->_Camera->_LookAt.toStr();
 }
 
 
@@ -360,7 +371,7 @@ void specialDownFunction(int key, int p1, int p2)
 
 void specialUpFunction(int key, int p1, int p2)
 {
-
+	
 }
 
 void keyboardDownFunction(unsigned char key, int p1, int p2)
@@ -383,11 +394,34 @@ void keyboardDownFunction(unsigned char key, int p1, int p2)
 			glutPositionWindow(0,0);
 			g_fullscreen = false;
 		}
-	}	
+	}
+
+	if (key == 'z')
+		g_avatar->avance = true;
+	if (key == 'q')
+		g_avatar->gauche = true;
+	if (key == 's')
+		g_avatar->recule = true;
+	if (key == 'd')
+		g_avatar->droite = true;
+	if (key == ' ')
+		g_avatar->Jump = true;
+		
+		//Log::log(Log::ENGINE_INFO,"avance");
 }
 
 void keyboardUpFunction(unsigned char key, int p1, int p2)
 {
+	if (key == 'z')
+		g_avatar->avance = false;
+	if (key == 'q')
+		g_avatar->gauche = false;
+	if (key == 's')
+		g_avatar->recule = false;
+	if (key == 'd')
+		g_avatar->droite = false;
+	if (key == ' ')
+		g_avatar->Jump = false;
 }
 
 void mouseWheelFunction(int wheel, int dir, int x, int y)
@@ -444,12 +478,12 @@ void mouseMoveFunction(int x, int y, bool pressed)
 			NYVert3Df strafe = g_renderer->_Camera->_NormVec;
 			strafe.Z = 0;
 			strafe.normalize();
-			strafe *= (float)-dx / 50.0f;
+			strafe *= (float)-dx; /// 50.0f;
 
 			NYVert3Df avance = g_renderer->_Camera->_Direction;
 			avance.Z = 0;
 			avance.normalize();
-			avance *= (float)dy / 50.0f;
+			avance *= (float)dy; /// 50.0f;
 
 			g_renderer->_Camera->move(avance + strafe);
 		}
@@ -595,6 +629,20 @@ int main(int argc, char* argv[])
 	LabelFps->Visible = true;
 	g_screen_jeu->addElement(LabelFps);
 
+	LabelPos = new GUILabel();
+	//LabelPos->Text = "Position : "+g_renderer->_Camera->_Position.toStr();
+	LabelPos->X = x;
+	LabelPos->Y = y+10;
+	LabelPos->Visible = true;
+	g_screen_jeu->addElement(LabelPos);
+
+	LabelLoAt = new GUILabel();
+	//LabelLoAt->Text = "Position : " + g_renderer->_Camera->_Position.toStr();
+	LabelLoAt->X = x;
+	LabelLoAt->Y = y + 20;
+	LabelLoAt->Visible = true;
+	g_screen_jeu->addElement(LabelLoAt);
+
 	//Ecran de parametrage
 	x = 10;
 	y = 10;
@@ -650,8 +698,10 @@ int main(int argc, char* argv[])
 	
 
 	g_world = new NYWorld();
-	g_world->_FacteurGeneration = 5;
+	g_world->_FacteurGeneration = 1;
 	g_world->init_world();
+
+	g_avatar = new NYAvatar(g_renderer->_Camera, g_world);
 
 	glutMainLoop(); 
 	
