@@ -24,11 +24,14 @@ NYWorld * g_world;
 NYAvatar * g_avatar;
 NYRenderer * g_renderer = NULL;
 NYTimer * g_timer = NULL;
+GLuint g_program;
 int g_nb_frames = 0;
 float g_elapsed_fps = 0;
 int g_main_window_id;
 int g_mouse_btn_gui_state = 0;
 bool g_fullscreen = false;
+
+NYVert3Df oldPosition;
 
 //GUI 
 GUIScreenManager * g_screen_manager = NULL;
@@ -77,8 +80,14 @@ void update(void)
 	g_avatar->update(elapsed);
 	g_renderer->_Camera->setPosition(g_avatar->Position);
 
+	NYVert3Df differencePosition = oldPosition - g_avatar->Position;
+
+	//g_renderer->_Camera->setLookAt(NYVert3Df(differencePosition.X, differencePosition.Y, differencePosition.Z));
+
 	LabelPos->Text = "Position : " + g_renderer->_Camera->_Position.toStr();
 	LabelLoAt->Text = "LookAt : " + g_renderer->_Camera->_LookAt.toStr();
+
+	oldPosition = g_avatar->Position;
 }
 
 
@@ -138,6 +147,17 @@ void renderObjects(void)
 
 	//Reset de la matrice
 	glPopMatrix();
+
+	glUseProgram(g_program);
+
+	GLuint elap = glGetUniformLocation(g_program, "elapsed");
+	glUniform1f(elap, NYRenderer::_DeltaTimeCumul);
+
+	GLuint amb = glGetUniformLocation(g_program, "ambientLevel");
+	glUniform1f(amb, 0.4);
+
+	GLuint invView = glGetUniformLocation(g_program, "invertView");
+	glUniformMatrix4fv(invView, 1, true, g_renderer->_Camera->_InvertViewMatrix.Mat.t);
 
 	glPushMatrix();
 	g_world->render_world_vbo();
@@ -406,6 +426,9 @@ void keyboardDownFunction(unsigned char key, int p1, int p2)
 		g_avatar->droite = true;
 	if (key == ' ')
 		g_avatar->Jump = true;
+
+	if (key == 'a')
+		g_program = g_renderer->createProgram("shaders/psbase.glsl", "shaders/vsbase.glsl");
 		
 		//Log::log(Log::ENGINE_INFO,"avance");
 }
@@ -600,7 +623,7 @@ int main(int argc, char* argv[])
 	g_renderer->setRender2DFun(render2d);
 	g_renderer->setLightsFun(setLightsBasedOnDayTime);
 	g_renderer->setBackgroundColor(NYColor());
-	g_renderer->initialise();
+	g_renderer->initialise(true);
 
 	//On applique la config du renderer
 	glViewport(0, 0, g_renderer->_ScreenWidth, g_renderer->_ScreenHeight);
@@ -683,6 +706,8 @@ int main(int argc, char* argv[])
 	g_renderer->_Camera->setLookAt(NYVert3Df(0,0,0));
 	
 
+	
+
 	//Fin init moteur
 
 	//Init application
@@ -703,8 +728,9 @@ int main(int argc, char* argv[])
 
 	g_avatar = new NYAvatar(g_renderer->_Camera, g_world);
 
+	g_program = g_renderer->createProgram("shaders/psbase.glsl", "shaders/vsbase.glsl");
+
 	glutMainLoop(); 
-	
 	return 0;
 }
 

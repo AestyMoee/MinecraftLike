@@ -9,6 +9,9 @@
       <Filter>engine\log</Filter>
     </ClCompile>
     <ClCompile Include="..\src\chunk.cpp" />
+    <ClCompile Include="..\..\_engine\src\engine\render\graph\tex_manager.cpp">
+      <Filter>engine\render</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="engine">
@@ -19,6 +22,9 @@
     </Filter>
     <Filter Include="engine\log">
       <UniqueIdentifier>{0a822301-530a-4ea3-9539-50b080a3d8da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{62f93a7d-624e-4b9f-93a6-f407a717cb08}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -41,5 +47,20 @@
     <ClInclude Include="..\src\cube.h" />
     <ClInclude Include="..\src\world.h" />
     <ClInclude Include="..\src\avatar.h" />
+    <ClInclude Include="my_physics.h" />
+    <ClInclude Include="..\..\_engine\src\engine\render\graph\tex_manager.h">
+      <Filter>engine\render</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\run\shaders\psbase.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\run\shaders\pshader.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\run\shaders\vsbase.glsl">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
